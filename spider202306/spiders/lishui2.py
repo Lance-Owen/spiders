@@ -1,11 +1,11 @@
-import html
+import requests
 import json
 import re
-
-import pandas as pd
-import requests
 import time
+import html
 import random
+import pandas as pd
+from bs4 import BeautifulSoup
 
 
 def error_log(error):
@@ -22,12 +22,12 @@ def error_log(error):
 url = "https://lssggzy.lishui.gov.cn/jsearchfront/interfaces/search.do"
 
 save_datas = []
-for i in range(1, 201):
+for i in range(1, 3):
     print(f"页码：{i}".center(100, "*"))
     payload = f"_cus_lq_projectcode=&_cus_pq_title=&begin=&end=&_cus_lq_dljg=&_cus_lq_jyjf=&_cus_eq_author=&sortType=2&websiteid=331101000003826&tpl=1621&p={i}&pg=30&cateid=683&_cus_lq_regioncode=\r\n"
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Cookie': 'user_sid=b444f4d52b1f4750b229900304913fd8; JSESSIONID=B98D5D1DD0866E8B4805149091B58E86; searchsign=02ad5f279cea4cb780e46ec2b1787b8e; searchid=6b159a3b20d844b38bface74f98d03d2; sid=d0918dd6ee376a8eccb02c1c53629061; _zcy_log_client_uuid=39835e80-0f38-11ee-b649-edb1f1e35ed8; SL_G_WPT_TO=zh-CN; arialoadData=false; SL_GWPT_Show_Hide_tmp=1; SL_wptGlobTipTmp=1; SERVERID=3688718e51e69dcc5273b4c5cdc8398b|1689586827|1689586735',
+        'Cookie': 'user_sid=104bcf6a74e34dedb2eb8131a0f7d526; JSESSIONID=E402DC955771441B5EEF5876B895F0E7; searchsign=5ee5737e7d5c43cd9bd81c6190a030b3; searchid=1be9e08d9f864521acb8d38bd9e92fa4; SL_G_WPT_TO=zh-CN; SL_GWPT_Show_Hide_tmp=1; SL_wptGlobTipTmp=1; NBSESSIONID=d120012d-8c61-4862-8ed6-dbe645ea763a; arialoadData=false; SERVERID=71bfd367a49f5c3316644ab3e3801eff|1687315863|1687315631; user_sid=37fa1d6d4b784bc48fc5c9085a728781; SERVERID=bc6beea6e995cecb42c7a1341ba3517f|1687678561|1687678561',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
     }
     # 请求信息
@@ -37,15 +37,14 @@ for i in range(1, 201):
     text = json.loads(text)
     # 遍历数据30条
     for d in text['dataResults']:
-        time.sleep(random.randint(0,5))
         save_data = []
-        for name in ['projectcode', 'bidsectioncode', 'url', 'industriestype', 'regioncode', 'tendermode']:
+        for name in ['projectcode','bidsectioncode','url','industriestype','regioncode','tendermode']:
             try:
                 save_data.append(d['data'][name])
             except Exception as e:
                 save_data.append('')
                 error_log(str(e))
-        projectcode, projectname, projecturl = save_data[:3]
+        projectcode,projectname,projecturl = save_data[:3]
 
         try:
             project_html = html.unescape(d['data']['bu11etincontent'])
@@ -58,8 +57,6 @@ for i in range(1, 201):
         price = 0
         del_label = re.compile(r'<[^>]+>', re.S)
         project_str = del_label.sub("", project_html)
-        # print(project_str)
-        # x = re.match('.*?下浮.*?(\d*\.\d*|\d*)%.*?',project_str).groups()[0]
         if re.findall('下浮[^\d]{0,3}(\d*\.\d*|\d*)%', project_str):
             rate = re.findall('下浮[^\d]{0,3}(\d{1,2}\.\d*|\d{0,2})%', project_str)[0]
             rate = float(rate) if rate else 0
@@ -88,19 +85,18 @@ for i in range(1, 201):
                     table_text[-1].append(s)
                 if not table_text[-1]:
                     table_text = table_text[:-1]
-
             if '投标单位名称' in table_text[0]:
                 col_index = table_text[0].index('投标单位名称')
                 print(table_text)
-                table_data = []
-
-                for d in table_text:
-                    # print(d)
-                    if len(d) > col_index:
-                        table_data.append(d[col_index])
-                df = pd.DataFrame(data=table_data, columns=['投标单位名称'])
+                try:
+                    df = pd.DataFrame(data=[d[col_index] if len(d) >= col_index+1 else '' for d in table_text] , columns=['投标单位名称'])
+                except:
+                    print("*****")
+                    print(table_text)
+                    print("***0000**")
+                    raise 'error'
                 # df = df[df['投标单位名称'].apply(lambda x: True if re.match(r".*?公司", str(x)) else False)]
-                df = df[df['投标单位名称'].apply(lambda x: True if len(x) >= 7 else False)]
+                df = df[df['投标单位名称'].apply(lambda x: True if len(str(x))>7 else False)]
 
                 df = df.fillna('')
                 if len(df) > 0:
@@ -115,6 +111,9 @@ for i in range(1, 201):
             print('程序完成！')
             break
 
+import pandas as pd
 
-df = pd.DataFrame(columns=['id', '项目名称', '网址', 'zbkzj', '下浮率', 'kbjj', '投标单位数量'], data=save_datas)
-df.to_csv('丽水市数据0717.csv', index=False, encoding='utf-8')
+df = pd.DataFrame(columns=['id', '项目名称', '网址', 'zbkzj', '下浮率', 'kbjj','投标单位数量'], data=save_datas)
+df.to_csv('丽水市测试数据0629.csv', index=False, encoding='utf-8')
+
+
