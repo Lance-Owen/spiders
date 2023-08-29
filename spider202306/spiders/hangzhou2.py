@@ -68,18 +68,46 @@ def get_project(url):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
         'Content-Type': 'text/html; charset=utf-8'
     }
+    del_label = re.compile(r'<[^>]+>', re.S)
     response = requests.request("GET", url, headers=headers, data=payload)
-
-    html = etree.HTML(response.text)
+    names = ['工程名称', '项目编号', '开标时间', '工程分类', '是否联合体投标', '资格审查方式', '本期概算(万元)', '备注', '对投标人的承包资质要求', '从业人员资格要求']
+    project_value = ['', '', '', '', '', '', '', '', '', '']
     try:
-        return html.xpath('//table[2]/tbody/tr[11]/td[2]/p/span[1]')[0].text
+        # find_value_list = [[0,1,2], [0,3,2], [0,4,2], [0,8,4], [0,11,2], [1,4,2], [1,5,4], [1,6,2], [3,1,2], [3,2,2]]
+        # find_value_list =[[2,2,1],[2,2,2],[2,2,3]]
+        tables = re.findall('<table[\s\S]*?<\/table>',response.text)
+        for table in tables:
+            for tr in re.findall('<tr[\s\S]*?<\/tr>',table):
+                tds = re.findall('<td[\s\S]*?<\/td>',tr)
+                for i in range(len(tds)):
+                    s = del_label.sub('', tds[i])
+                    s = re.sub('\s','',s)
+                    if s in names:
+                        index = names.index(s)
+                        s = del_label.sub('', tds[i+1])
+                        s = re.sub('\n', '', s).replace('&nbsp;','').strip()
+
+                        print(s)
+                        project_value[index] = s
+        return project_value
     except:
         print(url)
         return ''
+        '''
+        project_value = []
+        for t in find_value_list:
+            s = etree.HTML(table[t[0]]).xpath(f'//table[1]/tr[{t[1]}]/td[{t[2]}]//span')[0]
+            s = etree.tostring(s,encoding='utf-8').decode('utf-8')
+            del_label = re.compile(r'<[^>]+>',re.S)
+            s = del_label.sub('',s)
+            project_value.append(s)
+            print(s)
+        '''
+
 
 data = pd.DataFrame()
 # 遍历所有翻页数据
-for page_num in range(1,98):
+for page_num in range(1,99):
     print(f"当前获取第 {page_num} 页数据".center(100,"*"))
     # 获取当前时间戳
     millisecond_timestamp = round(time.time() * 1000)
@@ -101,11 +129,14 @@ for page_num in range(1,98):
         ID = project['ID']
         # TenderID = project['TenderID']
         project_url = f"https://ggzy.hzctc.hangzhou.gov.cn/AfficheShow/Home?AfficheID={ID}&IsInner=0&IsHistory=&ModuleID=22"
+        # project_url = "https://ggzy.hzctc.hangzhou.gov.cn/AfficheShow/Home?AfficheID=23b0e0fc-43a0-41dc-9993-ed0fd0f81e83&IsInner=0&IsHistory=&ModuleID=22"
         print(project_url)
-        _ = get_project(project_url)
-        print(open_project_url, extract_url, url_type,tender_num)
-        # df = pd.DataFrame(data=[[ID,TenderID,project['TenderNo'],project['TenderName'],open_project_url,extract_url,url_type,project['ProTypeStr'],tender_num]], columns=['id','tenderid','项目编号','项目名称','开标网址','参数抽取网址','参数抽取类型','project_type','投标单位数量'])
-        # data = pd.concat([data, df])
-        # time.sleep(random.randint(1,5))
+        project_value = get_project(project_url)
+        # if not project_value:
+        #     project_value = ['']*10
+        project_value.append(project_url)
+        df = pd.DataFrame(data=[project_value], columns=['项目名称','项目编号','开标时间','工程分类','是否联合体投标','资格审查方式','预算','备注','企业资质','人员资质','招标公告网址'])
+        data = pd.concat([data, df])
+        time.sleep(random.randint(1,5))
 # print(data)
-data.to_csv('杭州市开标项目信息2023-08-25.csv', index=False)
+data.to_csv('杭州市招标公告项目信息2023-08-29.csv', index=False)
