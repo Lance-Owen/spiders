@@ -1,11 +1,11 @@
-import requests
+import html
 import json
+import random
 import re
 import time
-import html
-import random
+
 import pandas as pd
-from bs4 import BeautifulSoup
+import requests
 
 
 def error_log(error):
@@ -22,7 +22,7 @@ def error_log(error):
 url = "https://lssggzy.lishui.gov.cn/jsearchfront/interfaces/search.do"
 
 save_datas = []
-for i in range(1, 3):
+for i in range(1, 201):
     print(f"页码：{i}".center(100, "*"))
     payload = f"_cus_lq_projectcode=&_cus_pq_title=&begin=&end=&_cus_lq_dljg=&_cus_lq_jyjf=&_cus_eq_author=&sortType=2&websiteid=331101000003826&tpl=1621&p={i}&pg=30&cateid=683&_cus_lq_regioncode=\r\n"
     headers = {
@@ -37,15 +37,16 @@ for i in range(1, 3):
     text = json.loads(text)
     # 遍历数据30条
     for d in text['dataResults']:
+        time.sleep(random.randint(1, 5))
         save_data = []
-        for name in ['projectcode','bidsectioncode','url','industriestype','regioncode','tendermode']:
+        for name in ['projectcode', 'bidsectioncode', 'url', 'industriestype', 'regioncode', 'tendermode']:
             try:
                 save_data.append(d['data'][name])
             except Exception as e:
                 save_data.append('')
                 error_log(str(e))
-        projectcode,projectname,projecturl = save_data[:3]
-
+        projectcode, projectname, projecturl = save_data[:3]
+        save_data[-2] = save_data[-2].split(' ')[-1]
         try:
             project_html = html.unescape(d['data']['bu11etincontent'])
         except Exception as e:
@@ -89,31 +90,30 @@ for i in range(1, 3):
                 col_index = table_text[0].index('投标单位名称')
                 print(table_text)
                 try:
-                    df = pd.DataFrame(data=[d[col_index] if len(d) >= col_index+1 else '' for d in table_text] , columns=['投标单位名称'])
+                    df = pd.DataFrame(data=[d[col_index] if len(d) >= col_index + 1 else '' for d in table_text],
+                                      columns=['投标单位名称'])
                 except:
                     print("*****")
                     print(table_text)
                     print("***0000**")
                     raise 'error'
                 # df = df[df['投标单位名称'].apply(lambda x: True if re.match(r".*?公司", str(x)) else False)]
-                df = df[df['投标单位名称'].apply(lambda x: True if len(str(x))>7 else False)]
+                df = df[df['投标单位名称'].apply(lambda x: True if len(str(x)) > 7 else False)]
 
                 df = df.fillna('')
                 if len(df) > 0:
                     df = df[df['投标单位名称'] != '']
                     max_len = max(max_len, len(df))
                     print(max_len)
-
-        save_data = [projectcode, projectname, projecturl, price / (1 - rate * 0.01), rate, price, max_len]
+        open_time = re.findall('.*?(\d{4,4}\/\d{1,2}\/\d{1,2}).*?', save_data[2])[0]
+        save_data = save_data + [price / (1 - rate * 0.01), rate, price, max_len, open_time]
         if save_data not in save_datas:
             save_datas.append(save_data)
         else:
             print('程序完成！')
             break
 
-import pandas as pd
-
-df = pd.DataFrame(columns=['id', '项目名称', '网址', 'zbkzj', '下浮率', 'kbjj','投标单位数量'], data=save_datas)
+df = pd.DataFrame(
+    columns=['id', '项目名称', '网址', '项目类型', '项目所在地', '招标方式', 'zbkzj', '下浮率', 'kbjj', '投标单位数量',
+             '开标时间'], data=save_datas)
 df.to_csv('丽水市测试数据0629.csv', index=False, encoding='utf-8')
-
-
