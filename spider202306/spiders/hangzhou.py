@@ -53,19 +53,30 @@ def get_open_project(url, id):
     html = response.text
     extract_url = f"https://ggzy.hzctc.hangzhou.gov.cn/OpenBidRecord/OpenParamInfo?openRecordListID={id}"
     tender_num = count_tender_num(html, '投标企业')
+    del_label = re.compile(r'<[^>]+>', re.S)
 
+    divs = re.findall('<div[\s\S]*?<\/div>', html)
+    for div in divs:
+        if '开标时间' in div:
+            open_time_label = re.findall('<span[\s\S]*?<\/span>',div)[0]
+            open_time = del_label.sub('', open_time_label)
+            open_time = re.sub('\n', '', open_time).replace('&nbsp;', '').strip()
+            print(open_time)
+            break
+    else:
+        open_time = ''
     if '查看系数' in html:
         # extract_response = requests.request("GET", extract_url, headers=headers, data=payload)
         # extract_value = re.findall('<span id="([^"]*)">',extract_response.text)
-        return extract_url,1, tender_num
+        return extract_url,1, tender_num, open_time
     elif '参数抽取' in html:
-        return '',2, tender_num
+        return '',2, tender_num, open_time
     else:
-        return '', 0, tender_num
+        return '', 0, tender_num, open_time
 
 data = pd.DataFrame()
 # 遍历所有翻页数据
-for page_num in range(1,106):
+for page_num in range(1,104):
     print(f"当前获取第 {page_num} 页数据".center(100,"*"))
     # 获取当前时间戳
     millisecond_timestamp = round(time.time() * 1000)
@@ -87,10 +98,10 @@ for page_num in range(1,106):
         ID = project['ID']
         TenderID = project['TenderID']
         open_project_url = f"https://ggzy.hzctc.hangzhou.gov.cn/OpenBidRecord/Index?id={ID}&tenderID={TenderID}&ModuleID=486"
-        extract_url,url_type,tender_num = get_open_project(open_project_url, ID)
+        extract_url,url_type,tender_num,open_time = get_open_project(open_project_url, ID)
         print(open_project_url, extract_url, url_type,tender_num)
-        df = pd.DataFrame(data=[[ID,TenderID,project['TenderNo'],project['TenderName'],open_project_url,extract_url,url_type,project['ProTypeStr'],tender_num]], columns=['id','tenderid','项目编号','项目名称','开标网址','参数抽取网址','参数抽取类型','project_type','投标单位数量'])
+        df = pd.DataFrame(data=[[ID,TenderID,project['TenderNo'],project['TenderName'],open_project_url,extract_url,url_type,project['ProTypeStr'],tender_num, open_time]], columns=['id','tenderid','项目编号','项目名称','开标网址','参数抽取网址','参数抽取类型','project_type','投标单位数量','开标时间'])
         data = pd.concat([data, df])
         time.sleep(random.randint(1,5))
 # print(data)
-data.to_csv('杭州市开标项目信息2023-08-25.csv', index=False)
+data.to_csv('杭州市开标项目信息2023-08-31.csv', index=False)

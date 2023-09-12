@@ -98,7 +98,7 @@ for i in range(1, 201):
                     print("***0000**")
                     raise 'error'
                 # df = df[df['投标单位名称'].apply(lambda x: True if re.match(r".*?公司", str(x)) else False)]
-                df = df[df['投标单位名称'].apply(lambda x: True if len(str(x)) > 7 else False)]
+                df = df[df['投标单位名称'].apply(lambda x: True if len(str(x)) > 3 else False)]
 
                 df = df.fillna('')
                 if len(df) > 0:

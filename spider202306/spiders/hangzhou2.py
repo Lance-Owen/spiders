@@ -139,4 +139,5 @@ for page_num in range(1,99):
         data = pd.concat([data, df])
         time.sleep(random.randint(1,5))
 # print(data)
-data.to_csv('杭州市招标公告项目信息2023-08-29.csv', index=False)
+data.drop_duplicates(inplace=True)
+data.to_excel('杭州市招标公告项目信息2023-08-29.xlsx', index=False)

@@ -4,6 +4,6 @@
 # df.to_csv('杭州市开标项目信息2023-08-29.csv', index_label=False)
 
 import pandas as pd
-df = pd.read_csv('杭州市招标公告项目信息2023-08-29.csv',encoding='gbk')
+df = pd.read_csv('杭州市开标项目信息2023-08-31.csv',encoding='gbk')
 df = df.drop_duplicates(keep='first')
-df.to_csv('杭州市招标公告项目信息2023-08-29.csv', index_label=False)
+df.to_excel('杭州市开标项目信息2023-08-31.xlsx', index=False)
