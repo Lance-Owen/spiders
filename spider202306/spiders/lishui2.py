@@ -39,6 +39,7 @@ for i in range(1, 201):
     for d in text['dataResults']:
         time.sleep(random.randint(1, 5))
         save_data = []
+        # 项目编号,项目名称,网址,工程类型,地区,招标类型
         for name in ['projectcode', 'bidsectioncode', 'url', 'industriestype', 'regioncode', 'tendermode']:
             try:
                 save_data.append(d['data'][name])
@@ -93,9 +94,7 @@ for i in range(1, 201):
                     df = pd.DataFrame(data=[d[col_index] if len(d) >= col_index + 1 else '' for d in table_text],
                                       columns=['投标单位名称'])
                 except:
-                    print("*****")
                     print(table_text)
-                    print("***0000**")
                     raise 'error'
                 # df = df[df['投标单位名称'].apply(lambda x: True if re.match(r".*?公司", str(x)) else False)]
                 df = df[df['投标单位名称'].apply(lambda x: True if len(str(x)) > 3 else False)]

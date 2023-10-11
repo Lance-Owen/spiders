@@ -3,14 +3,17 @@ import pandas as pd
 import re
 import time
 import random
+import datetime
+
+t = datetime.datetime.now().strftime('%Y-%m-%d')
+
+
 def request_text(url):
     '''
     get请求页面信息
-    :param url:
-    :return:
     '''
     # time.sleep(random.random())
-    time.sleep(random.randint(1,4))
+    time.sleep(random.randint(1, 4))
     payload = {}
     headers = {}
 
@@ -18,6 +21,8 @@ def request_text(url):
     #
     html_text = response.text
     return html_text
+
+
 def get_bidders_list(text):
     '''
     获取开标记录中投标单位报价信息，返回为dataframe，并且去除报价为空的数据
@@ -30,10 +35,14 @@ def get_bidders_list(text):
     tables = re_ul.findall(text)
 
     table_text = []
+    # 行
     for row in re_li.findall(tables[0]):
         table_text.append([])
+        # 列
         for col in re_span.findall(row):
+            # 获取标签信息
             s = del_label.sub("", re.sub("\s", '', col))
+            # 找到单位名称所在列
             if re.findall('投标单位', s) and len(s) <= 10:
                 s = '投标单位名称'
                 table_text = table_text[-1:]
@@ -45,7 +54,10 @@ def get_bidders_list(text):
     return df
 
 def get_extract_parameters(text):
-    extract_parameters = re.findall('现场抽取系数.*?>(.*?)<',text)[0]
-    if str.strip(extract_parameters) in ['0','/','\\']:
+    '''
+    清洗获取的抽取参数
+    '''
+    extract_parameters = re.findall('现场抽取系数.*?>(.*?)<', text)[0]
+    if str.strip(extract_parameters) in ['0', '/', '\\']:
         return ''
     return str.strip(extract_parameters)
