@@ -6,7 +6,7 @@ from hangzhou import *
 data = pd.DataFrame()
 
 # 遍历所有翻页数据
-for page_num in range(1, 82):
+for page_num in range(1, 76):
     print(f"当前获取第 {page_num} 页数据".center(100, "*"))
     url = "https://ggzy.hzctc.hangzhou.gov.cn/SecondPage/GetNotice"
 

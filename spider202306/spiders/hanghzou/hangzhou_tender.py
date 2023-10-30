@@ -6,7 +6,7 @@ from hangzhou import *
 
 data = pd.DataFrame()
 # 遍历所有翻页数据
-for page_num in range(1, 99):
+for page_num in range(1, 98):
     print(f"当前获取第 {page_num} 页数据".center(100, "*"))
     # 获取当前时间戳
     millisecond_timestamp = round(time.time() * 1000)
@@ -23,6 +23,8 @@ for page_num in range(1, 99):
     project_list = response.text
     project_list = json.loads(project_list)
     project_list = project_list['rows']
+    time.sleep(random.randint(1, 3))
+
     # 遍历项目，拼接项目请求地址，获取项目网页信息，xpath获取参数抽取信息
     for project in project_list:
         ID = project['ID']
@@ -35,6 +37,7 @@ for page_num in range(1, 99):
                           columns=['项目名称', '项目编号', '开标时间', '工程分类', '是否联合体投标', '资格审查方式',
                                    '预算', '备注', '企业资质', '人员资质', '招标公告网址'])
         data = pd.concat([data, df])
-        time.sleep(random.randint(1, 5))
+        time.sleep(1)
+
 data.drop_duplicates(inplace=True)
 data.to_excel(f'杭州市招标公告项目信息{t}.xlsx', index=False)
