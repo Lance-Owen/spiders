@@ -25,7 +25,7 @@ headers1 = {
 }
 
 df = pd.DataFrame()
-for i in range(50):
+for i in range(10):
     print(f"采集第 {i + 1} 页数据".center(100, '*'))
     payload['pn'] = i * 10
     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
@@ -48,4 +48,5 @@ for i in range(50):
                             columns=['id', '项目名称', '关系id', '招标网址', '开标时间', '评标办法'])
         df = pd.concat([df, data])
         sleep(random.randint(1, 5))
-# df.to_excel(f'六安市招标公告信息{t}.xlsx', index=False)
+df.drop_duplicates(inplace=True)
+df.to_excel(f'六安市招标公告信息{t}.xlsx', index=False)
